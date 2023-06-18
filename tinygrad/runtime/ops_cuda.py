@@ -1,6 +1,6 @@
 import subprocess
 from typing import Optional
-from time import perf_counter
+import time
 import numpy as np
 from pycuda.compiler import compile as cuda_compile # type: ignore
 from tinygrad.helpers import DEBUG, getenv, fromimport
@@ -20,7 +20,7 @@ if getenv("CUDACPU", 0) == 1:
     module_from_buffer = lambda src: cuda.module(src) # pylint: disable=unnecessary-lambda # noqa: E731
     class Event:
       def __init__(self): pass
-      def record(self): self.start = perf_counter()
+      def record(self): self.start = time.perf_counter()
       def time_till(self, other): return self.start - other.start
       def synchronize(self): pass
     class Context:
