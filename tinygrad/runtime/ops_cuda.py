@@ -26,9 +26,12 @@ if getenv("CUDACPU", 0) == 1:
     class Context:
       synchronize = lambda:0 # noqa: E731
     CompileError = Exception
-  __cuda_compile = cuda_compile
-  def _cuda_compile(prg, **kwargs): return __cuda_compile(prg, **{**kwargs, 'arch': 'sm_35', 'options': kwargs.get('options', []) + ['-Wno-deprecated-gpu-targets']}) # noqa: E731
-  cuda_compile = _cuda_compile # noqa: F811
+  class context:
+    class device:
+      compute_capability = lambda: (3,5) # pylint: disable=unnecessary-lambda # noqa: E731
+    get_device = lambda: context.device # pylint: disable=unnecessary-lambda # noqa: E731
+  import pycuda.driver # type: ignore
+  pycuda.driver.Context = context
   RawCUDABuffer = RawMallocBuffer
 else:
   import pycuda.autoprimaryctx # type: ignore # pylint: disable=unused-import # noqa: F401
@@ -46,7 +49,7 @@ class CUDAProgram:
           f.write(cuda_compile(prg, target="cubin", no_extern_c=True))
         sass = subprocess.check_output(['nvdisasm', '/tmp/cubin']).decode('utf-8')
         print(sass)
-      if not binary: prg = cuda_compile(prg, target="ptx", no_extern_c=True).decode('utf-8')
+      if not binary: prg = cuda_compile(prg, target="ptx", no_extern_c=True, options=['-Wno-deprecated-gpu-targets']).decode('utf-8')
     except cuda.CompileError as e:
       if DEBUG >= 3: print("FAILED TO BUILD", prg)
       raise e
